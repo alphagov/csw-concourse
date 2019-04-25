@@ -11,9 +11,10 @@ LABEL terraform="$TF_VERSION"
 LABEL user="gdscyber"
 
 RUN apt-get update -y  && \
-    apt-get install -y apt-utils lsb-release build-essential \
-     zlib1g-dev libssl-dev libbz2-dev sqlite3
-RUN apt-get install -y git unzip wget curl nodejs npm
+    apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
+    libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+    xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
+RUN apt-get install -y unzip nodejs npm
 RUN apt-get install -y expect awscli jq dnsutils
 
 # install n and upgrade node to n stable
