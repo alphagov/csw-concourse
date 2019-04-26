@@ -1,0 +1,23 @@
+#!/usr/bin/expect -f
+
+set prefix [lindex $argv 0]
+set envname [lindex $argv 1]
+set pubkeypath [lindex $argv 2]
+
+
+set timeout -1
+
+spawn /usr/local/bin/gulp environment.build --env=$envname
+
+expect "*first*"
+send -- "$prefix\r"
+expect "*existing*"
+send -- "$envname\r"
+expect "*public*"
+send -- "$pubkeypath\r"
+expect "Are you sure*"
+send -- "yes\r"
+expect "Are you sure*"
+send -- "yes\r"
+
+expect eof
