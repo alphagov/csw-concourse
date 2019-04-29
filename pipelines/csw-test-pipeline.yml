@@ -1,0 +1,232 @@
+---
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+
+resources:
+- name: csw-backend
+  type: git
+  source:
+    uri: https://github.com/alphagov/csw-backend.git
+    branch: master
+
+- name: csw-configuration
+  type: git
+  source:
+    private_key: |
+        ((csw-config-ssh-key))
+    uri: git@github.com:alphagov/csw-configuration.git
+    branch: concourse
+
+- name: notify
+  type: slack-notification
+  source:
+    url: ((slack-webhook-cyber-test))
+
+jobs:
+- name: job-csw-test-build
+  serial: true
+  plan:
+  - get: csw-backend
+    trigger: false
+  - get: csw-configuration
+  - task: csw-build
+    timeout: 30m
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: gdscyber/csw-concourse-worker
+          tag: '1.1.2'
+      inputs:
+      - name: csw-backend
+      - name: csw-configuration
+
+      params:
+        AWS_REGION: 'eu-west-1'
+        ACCOUNT_ID: ((cyber-staging))
+        ENVIRONMENT: 'concourse'
+        CD_ROLE: ((cd-role))
+        STAG_KMS: ((staging-kms-ssm))
+      run:
+        path: sh
+        args:
+        - -eu
+        - -c
+        - |
+          apt-get update -y
+
+          # set -x
+          ssh-keygen -m PEM -t RSA -N "" -f /root/.ssh/${ENVIRONMENT}
+
+          cd csw-backend/chalice
+          pip install -r requirements-dev.txt
+
+          # Unit test
+          # python -m unittest discover -v
+
+          cd ../build
+          npm install
+
+          echo "assuming aws conourse role..."
+          arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
+          eval $(aws-assume-role $arn)
+
+          echo "saving private/public keys ..."
+          prikey=`cat /root/.ssh/${ENVIRONMENT}`
+          aws ssm put-parameter \
+           --name "/csw/${ENVIRONMENT}/privatekey" \
+           --value "$prikey" \
+           --type SecureString \
+           --key-id "${STAG_KMS}" \
+           --overwrite \
+           --region ${AWS_REGION}
+
+           pubkey=`cat /root/.ssh/${ENVIRONMENT}.pub`
+           aws ssm put-parameter \
+            --name "/csw/${ENVIRONMENT}/publickey" \
+            --value "$pubkey" \
+            --type SecureString \
+            --key-id "${STAG_KMS}" \
+            --overwrite \
+            --region ${AWS_REGION}
+
+          echo "building csw ..."
+          buildcsw 10.11 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+
+    on_success:
+      put: notify
+      params:
+        channel: '#cyber-test-alerts'
+        text: |
+          CSW build job has completed.. Check it out at:
+          ((cd-url))/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+- name: job-csw-test-deploy
+  serial: true
+  plan:
+  - get: csw-backend
+  - get: csw-configuration
+  - task: csw-deploy
+    timeout: 30m
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: gdscyber/csw-concourse-worker
+          tag: '1.1.3'
+      inputs:
+      - name: csw-backend
+      - name: csw-configuration
+      params:
+        AWS_REGION: 'eu-west-1'
+        ACCOUNT_ID: ((cyber-staging))
+        ENVIRONMENT: 'concourse'
+        CD_ROLE: ((cd-role))
+      run:
+        path: sh
+        args:
+        - -eu
+        - -c
+        - |
+
+          echo "assuming aws conourse role..."
+          arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
+          eval $(aws-assume-role $arn)
+
+          echo "fetching private/public keys ..."
+          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
+          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
+          > /root/.ssh/${ENVIRONMENT}
+
+          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
+          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
+          > /root/.ssh/${ENVIRONMENT}.pub
+
+          chmod 400 /root/.ssh/${ENVIRONMENT}
+
+          cd csw-backend/chalice
+          pip install -r requirements-dev.txt
+
+          cd ../build
+          npm install
+
+          echo "loading csw enviroment..."
+          loadcsw 10.11 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+
+          echo "deploying csw enviroment..."
+          #/usr/local/bin/gulp environment.deploy --env=${ENVIRONMENT}
+          deploycsw ${ENVIRONMENT}
+
+    on_success:
+      put: notify
+      params:
+        channel: '#cyber-test-alerts'
+        text: |
+          CSW deploy job has completed.. Check it out at:
+          ((cd-url))/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+- name: job-csw-test-cleanup
+  serial: true
+  plan:
+  - get: csw-backend
+  - task: csw-destroy
+    timeout: 30m
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: gdscyber/csw-concourse-worker
+          tag: '1.1.2'
+      inputs:
+      - name: csw-backend
+      params:
+        AWS_REGION: 'eu-west-1'
+        ACCOUNT_ID: ((cyber-staging))
+        ENVIRONMENT: 'concourse'
+        CD_ROLE: ((cd-role))
+      run:
+        path: sh
+        args:
+        - -eu
+        - -c
+        - |
+
+          arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
+          eval $(aws-assume-role $arn)
+
+          echo "fetching private/public keys ..."
+          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
+          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
+          > /root/.ssh/${ENVIRONMENT}
+
+          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
+          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
+          > /root/.ssh/${ENVIRONMENT}.pub
+
+          chmod 400 /root/.ssh/${ENVIRONMENT}
+
+          cd csw-backend/chalice
+          pip install -r requirements-dev.txt
+
+          cd ../build
+          npm install
+
+          echo "loading csw enviroment..."
+          loadcsw 10.11 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+
+          echo "deploying csw enviroment..."
+          /usr/local/bin/gulp environment.cleanup --env=${ENVIRONMENT}
+
+    on_success:
+      put: notify
+      params:
+        channel: '#cyber-test-alerts'
+        text: |
+          CSW clean-up job has completed. Check it out at:
+          ((cd-url))/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME

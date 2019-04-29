@@ -40,8 +40,8 @@ RUN pyenv global 3.6.5
 RUN pyenv rehash
 
 # load custom scripts
-COPY bin/aws-assume-role /usr/local/bin/
-COPY bin/buildcsw /usr/local/bin/
+COPY bin /usr/local/bin
+
 
 RUN mkdir -p /root/.ssh && touch /root/.ssh/config
 
