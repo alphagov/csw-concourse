@@ -1,4 +1,18 @@
 ---
+csw_image_resource: &csw_image_resource
+  type: docker-image
+  source:
+    repository: gdscyber/csw-concourse-worker
+    tag: '1.1.4'
+
+success_notify: &success_notify
+  put: notify
+  params:
+    channel: '#cyber-test-alerts'
+    text: |
+      CSW test pipeline job has completed. Check it out at:
+      $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
 resource_types:
 - name: slack-notification
   type: docker-image
@@ -36,11 +50,7 @@ jobs:
     timeout: 30m
     config:
       platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: gdscyber/csw-concourse-worker
-          tag: '1.1.2'
+      image_resource: *csw_image_resource
       inputs:
       - name: csw-backend
       - name: csw-configuration
@@ -71,7 +81,7 @@ jobs:
           cd ../build
           npm install
 
-          echo "assuming aws conourse role..."
+          echo "assuming aws concourse role..."
           arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
           eval $(aws-assume-role $arn)
 
@@ -98,12 +108,7 @@ jobs:
           buildcsw 10.11 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
 
     on_success:
-      put: notify
-      params:
-        channel: '#cyber-test-alerts'
-        text: |
-          CSW build job has completed.. Check it out at:
-          ((cd-url))/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+      <<: *success_notify
 
 - name: job-csw-test-deploy
   serial: true
@@ -114,11 +119,7 @@ jobs:
     timeout: 30m
     config:
       platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: gdscyber/csw-concourse-worker
-          tag: '1.1.3'
+      image_resource: *csw_image_resource
       inputs:
       - name: csw-backend
       - name: csw-configuration
@@ -134,7 +135,7 @@ jobs:
         - -c
         - |
 
-          echo "assuming aws conourse role..."
+          echo "assuming aws concourse role..."
           arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
           eval $(aws-assume-role $arn)
 
@@ -163,12 +164,7 @@ jobs:
           deploycsw ${ENVIRONMENT}
 
     on_success:
-      put: notify
-      params:
-        channel: '#cyber-test-alerts'
-        text: |
-          CSW deploy job has completed.. Check it out at:
-          ((cd-url))/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+      <<: *success_notify
 
 - name: job-csw-test-cleanup
   serial: true
@@ -178,11 +174,7 @@ jobs:
     timeout: 30m
     config:
       platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: gdscyber/csw-concourse-worker
-          tag: '1.1.2'
+      image_resource: *csw_image_resource
       inputs:
       - name: csw-backend
       params:
@@ -197,6 +189,7 @@ jobs:
         - -c
         - |
 
+          echo "assuming aws concourse role..."
           arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
           eval $(aws-assume-role $arn)
 
@@ -224,9 +217,4 @@ jobs:
           /usr/local/bin/gulp environment.cleanup --env=${ENVIRONMENT}
 
     on_success:
-      put: notify
-      params:
-        channel: '#cyber-test-alerts'
-        text: |
-          CSW clean-up job has completed. Check it out at:
-          ((cd-url))/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+      <<: *success_notify
