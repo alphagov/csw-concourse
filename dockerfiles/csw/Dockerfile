@@ -3,7 +3,7 @@ FROM ubuntu:18.04
 ENV TF_VERSION 0.11.13
 
 # expect need local time zone
-ENV TZ=Europe/London
+ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 LABEL ubuntu="18.04"
