@@ -1,0 +1,14 @@
+#!/usr/bin/expect -f
+
+set envname [lindex $argv 0]
+
+set timeout -1
+
+spawn /usr/local/bin/gulp environment.deploy --env=$envname
+
+expect "Are you sure*"
+send -- "yes\r"
+expect "Are you sure*"
+send -- "yes\r"
+
+expect eof

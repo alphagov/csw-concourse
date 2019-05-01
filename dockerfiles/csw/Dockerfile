@@ -3,7 +3,7 @@ FROM ubuntu:18.04
 ENV TF_VERSION 0.11.13
 
 # expect need local time zone
-ENV TZ=Europe/London
+ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 LABEL ubuntu="18.04"
@@ -40,8 +40,8 @@ RUN pyenv global 3.6.5
 RUN pyenv rehash
 
 # load custom scripts
-COPY bin/aws-assume-role /usr/local/bin/
-COPY bin/buildcsw /usr/local/bin/
+COPY bin /usr/local/bin
+
 
 RUN mkdir -p /root/.ssh && touch /root/.ssh/config
 
