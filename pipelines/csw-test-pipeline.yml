@@ -3,7 +3,7 @@ csw_image_resource: &csw_image_resource
   type: docker-image
   source:
     repository: gdscyber/csw-concourse-worker
-    tag: '1.1.4'
+    tag: '1.2.0'
 
 success_notify: &success_notify
   put: notify
@@ -24,7 +24,7 @@ resources:
   type: git
   source:
     uri: https://github.com/alphagov/csw-backend.git
-    branch: master
+    branch: disable_broken_tests
 
 - name: csw-configuration
   type: git
@@ -140,18 +140,13 @@ jobs:
           eval $(aws-assume-role $arn)
 
           echo "fetching private/public keys ..."
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}
-
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}.pub
-
-          chmod 400 /root/.ssh/${ENVIRONMENT}
+          getsshkey ${ENVIRONMENT} ${AWS_REGION}
 
           cd csw-backend/chalice
           pip install -r requirements-dev.txt
+
+          # Unit test
+          python -m unittest discover -v
 
           cd ../build
           npm install
@@ -194,15 +189,7 @@ jobs:
           eval $(aws-assume-role $arn)
 
           echo "fetching private/public keys ..."
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}
-
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}.pub
-
-          chmod 400 /root/.ssh/${ENVIRONMENT}
+          getsshkey ${ENVIRONMENT} ${AWS_REGION}
 
           cd csw-backend/chalice
           pip install -r requirements-dev.txt
