@@ -3,7 +3,7 @@ csw_image_resource: &csw_image_resource
   type: docker-image
   source:
     repository: gdscyber/csw-concourse-worker
-    tag: '1.2.0'
+    tag: '1.2.1'
 
 success_notify: &success_notify
   put: notify
@@ -126,7 +126,7 @@ jobs:
       params:
         AWS_REGION: 'eu-west-1'
         ACCOUNT_ID: ((cyber-staging))
-        ENVIRONMENT: 'concourse'
+        ENVIRONMENT: 'uat'
         CD_ROLE: ((cd-role))
       run:
         path: sh
@@ -152,7 +152,7 @@ jobs:
           npm install
 
           echo "loading csw enviroment..."
-          loadcsw 10.11 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+            loadcsw 10.100 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
 
           echo "deploying csw enviroment..."
           #/usr/local/bin/gulp environment.deploy --env=${ENVIRONMENT}

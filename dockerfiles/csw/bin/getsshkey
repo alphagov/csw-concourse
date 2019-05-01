@@ -5,11 +5,11 @@ set -e
 ENVIRONMENT="$1"
 AWS_REGION="$2"
 
-echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
+echo -e $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
 --region ${AWS_REGION:-eu-west-1} --with-decryption | jq .Parameter.Value) | tr -d '"' \
 > /root/.ssh/${ENVIRONMENT}
 
-echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
+echo -e $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
 --region ${AWS_REGION:-eu-west-1} --with-decryption | jq .Parameter.Value) | tr -d '"' \
 > /root/.ssh/${ENVIRONMENT}.pub
 
