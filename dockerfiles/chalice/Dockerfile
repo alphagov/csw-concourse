@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM amazonlinux:latest
 
 ENV TF_VERSION 0.11.13
 
@@ -6,29 +6,29 @@ ENV TF_VERSION 0.11.13
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-LABEL ubuntu="18.04"
+LABEL amazonlinux="latest"
 LABEL terraform="$TF_VERSION"
 LABEL user="gdscyber"
 
-RUN apt-get update && apt-get install -y \
-  python3.6 \
-  python3-distutils \
-  python3-pip \
-  build-essential \
-  libssl-dev \
-  libffi-dev \
-  python3-dev \
-  unzip \
-  nodejs \
-  npm \
-  git \
-  expect \
-  awscli \
-  jq \
-  curl \
-  unzip \
-  wget
-
+RUN yum update -y && \
+        yum groupinstall -y "Development Tools" && \
+        yum install -y \
+        https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+        yum install -y \
+        --enablerepo=epel \
+        -y \
+        awscli \
+        expect \
+        gcc \
+        gcc-c++ make \
+        git \
+        jq \
+        nodejs \
+        npm \
+        openssl-devel \
+        python36 \
+        python37 \
+        unzip
 
 # install n and upgrade node to n stable
 RUN npm install -g n
@@ -36,9 +36,6 @@ RUN n 10.12.0
 
 # install gulp-cli
 RUN npm install -g gulp-cli
-
-# install npm-reinstall
-# RUN npm install -g npm-reinstall
 
 # Python 3 encoding set
 ENV LANG C.UTF-8
