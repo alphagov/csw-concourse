@@ -10,12 +10,25 @@ LABEL ubuntu="18.04"
 LABEL terraform="$TF_VERSION"
 LABEL user="gdscyber"
 
-RUN apt-get update -y  && \
-    apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
-    libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-    xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
-RUN apt-get install -y unzip nodejs npm
-RUN apt-get install -y expect awscli jq dnsutils
+RUN apt-get update && apt-get install -y \
+  python3.6 \
+  python3-distutils \
+  python3-pip \
+  build-essential \
+  libssl-dev \
+  libffi-dev \
+  python3-dev \
+  unzip \
+  nodejs \
+  npm \
+  git \
+  expect \
+  awscli \
+  jq \
+  curl \
+  unzip \
+  wget
+
 
 # install n and upgrade node to n stable
 RUN npm install -g n
@@ -25,19 +38,10 @@ RUN n 10.12.0
 RUN npm install -g gulp-cli
 
 # install npm-reinstall
-RUN npm install -g npm-reinstall
+# RUN npm install -g npm-reinstall
 
 # Python 3 encoding set
 ENV LANG C.UTF-8
-
-# install pyenv
-RUN curl https://pyenv.run | bash
-
-ENV PATH="/root/.pyenv/shims:/root/.pyenv/bin:${PATH}"
-
-RUN pyenv install 3.6.5
-RUN pyenv global 3.6.5
-RUN pyenv rehash
 
 # install terraform
 WORKDIR /tmp

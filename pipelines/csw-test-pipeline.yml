@@ -1,9 +1,15 @@
 ---
+# csw_image_resource: &csw_image_resource
+#   type: docker-image
+#   source:
+#     repository: gdscyber/csw-concourse-worker
+#     tag: '1.2.1'
+
 csw_image_resource: &csw_image_resource
   type: docker-image
   source:
-    repository: gdscyber/csw-concourse-worker
-    tag: '1.2.1'
+    repository: coolteddy/ubuntu18
+    tag: latest
 
 success_notify: &success_notify
   put: notify
@@ -24,7 +30,7 @@ resources:
   type: git
   source:
     uri: https://github.com/alphagov/csw-backend.git
-    branch: disable_broken_tests
+    branch: master
 
 - name: csw-configuration
   type: git
@@ -32,7 +38,7 @@ resources:
     private_key: |
         ((csw-config-ssh-key))
     uri: git@github.com:alphagov/csw-configuration.git
-    branch: concourse
+    branch: master
 
 - name: notify
   type: slack-notification
@@ -126,7 +132,7 @@ jobs:
       params:
         AWS_REGION: 'eu-west-1'
         ACCOUNT_ID: ((cyber-staging))
-        ENVIRONMENT: 'uat'
+        ENVIRONMENT: 'eliska'
         CD_ROLE: ((cd-role))
       run:
         path: sh
@@ -135,6 +141,17 @@ jobs:
         - -c
         - |
 
+          set -x
+
+          apt-get install -y git
+
+          # echo "get environment prefix and account id"
+          # CONFIG_FILE=csw-configuration/environments/${ENVIRONMENT}/settings.json
+          # PREFIX=`cat ${CONFIG_FILE} | jq .ip_16bit_prefix | tr -d '"'`
+          # ACCOUNT_ID=`cat ${CONFIG_FILE} | jq .host_account_id | tr -d '"'`
+          # echo "ACCOUNT ID ...${ACCOUNT_ID}"
+          # echo "PREFIX ...${PREFIX}"
+
           echo "assuming aws concourse role..."
           arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
           eval $(aws-assume-role $arn)
@@ -142,20 +159,25 @@ jobs:
           echo "fetching private/public keys ..."
           getsshkey ${ENVIRONMENT} ${AWS_REGION}
 
+          python3.6 -m venv my_env
+          . my_env/bin/activate
+          pip install wheel
+
+          echo "installing requirements ..."
           cd csw-backend/chalice
           pip install -r requirements-dev.txt
 
           # Unit test
-          python -m unittest discover -v
+          # python -m unittest discover -v
 
           cd ../build
           npm install
 
           echo "loading csw enviroment..."
-            loadcsw 10.100 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+          # loadcsw ${PREFIX} ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+          loadcsw 10.9 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
 
           echo "deploying csw enviroment..."
-          #/usr/local/bin/gulp environment.deploy --env=${ENVIRONMENT}
           deploycsw ${ENVIRONMENT}
 
     on_success:
