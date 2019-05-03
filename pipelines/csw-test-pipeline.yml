@@ -3,7 +3,7 @@ csw_image_resource: &csw_image_resource
   type: docker-image
   source:
     repository: gdscyber/csw-concourse-worker
-    tag: '1.1.4'
+    tag: '1.3.0'
 
 success_notify: &success_notify
   put: notify
@@ -32,7 +32,7 @@ resources:
     private_key: |
         ((csw-config-ssh-key))
     uri: git@github.com:alphagov/csw-configuration.git
-    branch: concourse
+    branch: master
 
 - name: notify
   type: slack-notification
@@ -114,6 +114,7 @@ jobs:
   serial: true
   plan:
   - get: csw-backend
+    trigger: true
   - get: csw-configuration
   - task: csw-deploy
     timeout: 30m
@@ -126,7 +127,7 @@ jobs:
       params:
         AWS_REGION: 'eu-west-1'
         ACCOUNT_ID: ((cyber-staging))
-        ENVIRONMENT: 'concourse'
+        ENVIRONMENT: 'uat'
         CD_ROLE: ((cd-role))
       run:
         path: sh
@@ -135,32 +136,42 @@ jobs:
         - -c
         - |
 
+          set -x
+
+          echo "get ${ENVIRONMENT} environment for prefix and account id"
+          CONFIG_FILE=csw-configuration/environments/${ENVIRONMENT}/settings.json
+          PREFIX=`cat ${CONFIG_FILE} | jq .ip_16bit_prefix | tr -d '"'`
+          ACCOUNT_ID=`cat ${CONFIG_FILE} | jq .host_account_id | tr -d '"'`
+          echo "ACCOUNT ID ...${ACCOUNT_ID}"
+          echo "PREFIX ...${PREFIX}"
+
           echo "assuming aws concourse role..."
           arn="arn:aws:iam::${ACCOUNT_ID}:role/${CD_ROLE}"
           eval $(aws-assume-role $arn)
 
           echo "fetching private/public keys ..."
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}
+          getsshkey ${ENVIRONMENT} ${AWS_REGION}
 
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}.pub
+          echo "setting virtualenv..."
+          python3.6 -m venv csw-env
+          . csw-env/bin/activate
+          pip install wheel
 
-          chmod 400 /root/.ssh/${ENVIRONMENT}
-
+          echo "installing requirements ..."
           cd csw-backend/chalice
           pip install -r requirements-dev.txt
+
+          # Unit test
+          python -m unittest discover -v
 
           cd ../build
           npm install
 
           echo "loading csw enviroment..."
-          loadcsw 10.11 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+          loadcsw ${PREFIX} ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+          #loadcsw 10.9 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
 
           echo "deploying csw enviroment..."
-          #/usr/local/bin/gulp environment.deploy --env=${ENVIRONMENT}
           deploycsw ${ENVIRONMENT}
 
     on_success:
@@ -194,15 +205,7 @@ jobs:
           eval $(aws-assume-role $arn)
 
           echo "fetching private/public keys ..."
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/privatekey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}
-
-          echo $(aws ssm get-parameter --name "/csw/${ENVIRONMENT}/publickey" \
-          --region ${AWS_REGION} --with-decryption | jq .Parameter.Value) | tr -d '"' \
-          > /root/.ssh/${ENVIRONMENT}.pub
-
-          chmod 400 /root/.ssh/${ENVIRONMENT}
+          getsshkey ${ENVIRONMENT} ${AWS_REGION}
 
           cd csw-backend/chalice
           pip install -r requirements-dev.txt
