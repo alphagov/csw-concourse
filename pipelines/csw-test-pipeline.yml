@@ -114,6 +114,7 @@ jobs:
   serial: true
   plan:
   - get: csw-backend
+    trigger: true
   - get: csw-configuration
   - task: csw-deploy
     timeout: 30m
@@ -126,7 +127,7 @@ jobs:
       params:
         AWS_REGION: 'eu-west-1'
         ACCOUNT_ID: ((cyber-staging))
-        ENVIRONMENT: 'eliska'
+        ENVIRONMENT: 'uat'
         CD_ROLE: ((cd-role))
       run:
         path: sh
@@ -161,14 +162,14 @@ jobs:
           pip install -r requirements-dev.txt
 
           # Unit test
-          # python -m unittest discover -v
+          python -m unittest discover -v
 
           cd ../build
           npm install
 
           echo "loading csw enviroment..."
           loadcsw ${PREFIX} ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
-          # loadcsw 10.9 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
+          #loadcsw 10.9 ${ENVIRONMENT} /root/.ssh/${ENVIRONMENT}.pub
 
           echo "deploying csw enviroment..."
           deploycsw ${ENVIRONMENT}
