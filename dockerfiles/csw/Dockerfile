@@ -1,4 +1,4 @@
-FROM gdscyber/cyber-chalice:1.0
+FROM gdscyber/cyber-chalice:2.0
 
 LABEL ubuntu="18.04"
 LABEL user="gdscyber"

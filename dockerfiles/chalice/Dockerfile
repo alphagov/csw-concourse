@@ -10,25 +10,12 @@ LABEL ubuntu="18.04"
 LABEL terraform="$TF_VERSION"
 LABEL user="gdscyber"
 
-RUN apt-get update && apt-get install -y \
-  python3.6 \
-  python3-distutils \
-  python3-pip \
-  build-essential \
-  libssl-dev \
-  libffi-dev \
-  python3-dev \
-  unzip \
-  nodejs \
-  npm \
-  git \
-  expect \
-  awscli \
-  jq \
-  curl \
-  unzip \
-  wget
-
+RUN apt-get update -y
+RUN apt-get install -y python3.6 python3-distutils python3-pip
+RUN apt-get install -y build-essential libssl-dev libffi-dev python3-dev
+RUN apt-get install -y python3-venv
+RUN apt-get install -y nodejs npm
+RUN apt-get install -y expect awscli jq curl unzip git
 
 # install n and upgrade node to n stable
 RUN npm install -g n
