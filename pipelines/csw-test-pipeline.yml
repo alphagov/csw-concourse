@@ -266,7 +266,7 @@ jobs:
           /usr/local/bin/gulp environment.chalice_s3_retrieve_state --env=${ENVIRONMENT}
 
           echo "test e2e.."
-          /usr/local/bin/gulp environment.e2e --env=${ENVIRONMENT} --user=dan.jones
+          /usr/local/bin/gulp environment.e2e --env=${ENVIRONMENT} --user=e2etest.user
 
     on_success:
       <<: *success_notify
