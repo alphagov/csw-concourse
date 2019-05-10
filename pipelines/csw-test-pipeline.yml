@@ -103,9 +103,10 @@ jobs:
 - name: build
   serial: true
   plan:
-  - get: csw-backend
-    trigger: false
-  - get: csw-configuration
+  - aggregate:
+    - get: csw-backend
+      trigger: false
+    - get: csw-configuration
   - task: csw-build
     timeout: 30m
     config:
@@ -131,6 +132,11 @@ jobs:
 
           # set -x
           ssh-keygen -m PEM -t RSA -N "" -f /root/.ssh/${ENVIRONMENT}
+
+          echo "setting virtualenv..."
+          python3.6 -m venv csw-env
+          . csw-env/bin/activate
+          pip install wheel
 
           cd csw-backend/chalice
           pip install -r requirements-dev.txt
@@ -173,10 +179,11 @@ jobs:
 - name: uat-deploy
   serial: true
   plan:
-  - get: csw-backend
-    trigger: true
-  - get: csw-configuration
-  - task: uat-unit-test
+  - aggregate:
+    - get: csw-backend
+      trigger: true
+    - get: csw-configuration
+  - task: csw-unit-test
     timeout: 30m
     config:
       platform: linux
@@ -203,7 +210,7 @@ jobs:
           # Unit test
           python -m unittest discover -v
 
-  - task: uat-deploy
+  - task: csw-uat-deploy
     timeout: 30m
     config:
       <<: *deploy_task
@@ -213,7 +220,7 @@ jobs:
         ENVIRONMENT: 'uat'
         CD_ROLE: ((cd-role))
 
-  - task: csw-uat-e2e-test
+  - task: csw-e2e-test
     timeout: 30m
     config:
       platform: linux
@@ -274,11 +281,12 @@ jobs:
 - name: prod-deploy
   serial: true
   plan:
-  - get: csw-backend
-  - get: csw-configuration
-    passed: [uat-deploy]
-    trigger: true
-  - task: csw-prod-deploy-task
+  - aggregate:
+    - get: csw-backend
+    - get: csw-configuration
+      passed: [uat-deploy]
+      trigger: true
+  - task: csw-prod-deploy
     timeout: 30m
     config:
       platform: linux
