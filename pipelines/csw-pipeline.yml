@@ -22,7 +22,15 @@ success_notify: &success_notify
   params:
     channel: '#cyber-test-alerts'
     text: |
-      CSW test pipeline job has completed. Check it out at:
+      CSW pipeline job has completed. Check it out at:
+      $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+fail_notify: &fail_notify
+  put: notify
+  params:
+    channel: '#cyber-test-alerts'
+    text: |
+      CSW pipeline job FAILED. Check it out at:
       $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
 
 deploy_task: &deploy_task
@@ -142,7 +150,7 @@ jobs:
           pip install -r requirements-dev.txt
 
           # Unit test
-          python -m unittest discover -v
+          # python -m unittest discover -v
 
           cd ../build
           npm install
@@ -175,6 +183,9 @@ jobs:
 
     on_success:
       <<: *success_notify
+
+    on_failure:
+      <<: *fail_notify
 
 - name: uat-deploy
   serial: true
@@ -278,6 +289,9 @@ jobs:
     on_success:
       <<: *success_notify
 
+    on_failure:
+      <<: *fail_notify
+
 - name: prod-deploy
   serial: true
   plan:
@@ -289,27 +303,18 @@ jobs:
   - task: csw-prod-deploy
     timeout: 30m
     config:
-      platform: linux
-      image_resource: *csw_image_resource
-      inputs:
-      - name: csw-backend
-      - name: csw-configuration
+      <<: *deploy_task
       params:
         AWS_REGION: 'eu-west-1'
-        ACCOUNT_ID: ((cyber-staging))
+        ACCOUNT_ID: ((cyber-prod))
         ENVIRONMENT: 'prod'
         CD_ROLE: ((cd-role))
-      run:
-        path: sh
-        args:
-        - -eu
-        - -c
-        - |
-
-          echo "deploying to ${ENVIRONMENT}..."
 
     on_success:
       <<: *success_notify
+
+    on_failure:
+      <<: *fail_notify
 
 - name: cleanup
   serial: true
@@ -360,3 +365,6 @@ jobs:
 
     on_success:
       <<: *success_notify
+
+    on_failure:
+      <<: *fail_notify
