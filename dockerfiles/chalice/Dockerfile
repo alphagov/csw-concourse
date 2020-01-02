@@ -34,7 +34,7 @@ ENV LANG C.UTF-8
 WORKDIR /tmp
 
 RUN curl https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip > terraform.zip && \
-    echo '5925cd4d81e7d8f42a0054df2aafd66e2ab7408dbed2bd748f0022cfe592f8d2  terraform.zip'  > terraform.sha && \
+    echo '9b9a4492738c69077b079e595f5b2a9ef1bc4e8fb5596610f69a6f322a8af8dd  terraform.zip'  > terraform.sha && \
     sha256sum -c terraform.sha && unzip terraform.zip && mv terraform /usr/bin/terraform                    && \
     rm terraform.zip && rm terraform.sha
 
