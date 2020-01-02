@@ -15,7 +15,7 @@ csw_image_resource: &csw_image_resource
   type: docker-image
   source:
     repository: gdscyber/csw-concourse-worker
-    tag: '1.3.1'
+    tag: '1.3.2'
 
 success_notify: &success_notify
   put: notify
