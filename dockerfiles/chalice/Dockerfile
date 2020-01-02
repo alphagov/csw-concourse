@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-ENV TF_VERSION 0.11.13
+ENV TF_VERSION 0.11.14
 
 # expect need local time zone
 ENV TZ=UTC
