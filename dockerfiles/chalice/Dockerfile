@@ -1,6 +1,7 @@
 FROM ubuntu:18.04
 
 ENV TF_VERSION 0.11.14
+ENV TF_CHECKSUM 9b9a4492738c69077b079e595f5b2a9ef1bc4e8fb5596610f69a6f322a8af8dd
 
 # expect need local time zone
 ENV TZ=UTC
@@ -34,7 +35,7 @@ ENV LANG C.UTF-8
 WORKDIR /tmp
 
 RUN curl https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip > terraform.zip && \
-    echo '9b9a4492738c69077b079e595f5b2a9ef1bc4e8fb5596610f69a6f322a8af8dd  terraform.zip'  > terraform.sha && \
+    echo "${TF_CHECKSUM}  terraform.zip"  > terraform.sha && \
     sha256sum -c terraform.sha && unzip terraform.zip && mv terraform /usr/bin/terraform                    && \
     rm terraform.zip && rm terraform.sha
 
