@@ -20,7 +20,7 @@ csw_image_resource: &csw_image_resource
 success_notify: &success_notify
   put: notify
   params:
-    channel: '#cst-tooling-team'
+    channel: '#cyber-security-service-health'
     text: |
       CSW pipeline job has completed.
       $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
@@ -28,7 +28,7 @@ success_notify: &success_notify
 fail_notify: &fail_notify
   put: notify
   params:
-    channel: '#cst-tooling-team'
+    channel: '#cyber-security-service-health'
     text: |
       CSW pipeline job has FAILED.
       $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
@@ -111,7 +111,7 @@ jobs:
 - name: build
   serial: true
   plan:
-  - aggregate:
+  - in_parallel:
     - get: csw-backend
       trigger: false
     - get: csw-configuration
