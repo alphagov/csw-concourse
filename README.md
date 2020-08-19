@@ -20,6 +20,10 @@ Access to [Concourse](https://cd.gds-reliability.engineering/teams/cybersecurity
 Read general info on [deploying into PaaS using Concourse](https://cyber-security-team-manual.cloudapps.digital/How-To-Build-and-Deploy-an-App-to-PaaS-using-Concourse.html#set-pipeline-on-concourse-and-run)
 
 ### Docker
+Note: The Docker images that are defined in [dockerfiles](dockerfiles) are now automatically built
+using the `cyber-security-concourse-base-image` pipeline on the RE Concourse. There is no need to
+manually build and deploy these images.
+
 The CSW Concourse implementation has two docker images in the Docker Hub:
 
   - **cyber-chalice**
