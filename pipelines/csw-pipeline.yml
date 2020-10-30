@@ -16,6 +16,8 @@ csw_image_resource: &csw_image_resource
   source:
     repository: gdscyber/csw-concourse-worker
     tag: '1.3.2'
+    username: ((docker_hub_username))
+    password: ((docker_hub_password))
 
 success_notify: &success_notify
   put: notify
@@ -86,6 +88,8 @@ resource_types:
   type: docker-image
   source:
     repository: cfcommunity/slack-notification-resource
+    username: ((docker_hub_username))
+    password: ((docker_hub_password))
 
 resources:
 - name: csw-backend
