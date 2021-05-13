@@ -2,7 +2,7 @@
 
 For access requirements go to [Prerequisites](#Prerequisites).
 
-If you want to build a Docker image, follow the [Docker](#Docker) section.
+If you want to update and/or build a Docker image, follow the [Docker](#Docker) section.
 
 For information about how the Concourse jobs are set up, go to [Concourse](#Concourse)
 
@@ -11,7 +11,7 @@ If you want to write or amend a Concourse pipeline, follow the [Implementing Con
 For information about the IAM role and policies that have been implemented go to [IAM role](#IAM-role).
 
 ### Prerequisites
-Access to [DockerHub](https://hub.docker.com/) - Ask the Tooling team to share credentials for the gdscyber account via LastPass.
+Access to [DockerHub](https://hub.docker.com/) - Ask the Engineering team to share credentials for the gdscyber account via LastPass.
 
 Access to [csw-concourse GitHub repo](https://github.com/alphagov/csw-concourse)
 
@@ -24,6 +24,11 @@ Note: The Docker images that are defined in [dockerfiles](dockerfiles) are now a
 using the `cyber-security-concourse-base-image` pipeline on the RE Concourse. There is no need to
 manually build and deploy these images.
 
+If updating the Dockerfiles for these images, **remember to also update the `tags` files according
+to [Semantic Versioning](https://semver.org)**. For example, if you add a new feature to the
+cyber-chalice Dockerfile, but is otherwise backwards compatible, increase the minor version by one
+(e.g. 2.1 -> 2.2).
+
 The CSW Concourse implementation has two docker images in the Docker Hub:
 
   - **cyber-chalice**
@@ -33,10 +38,10 @@ The CSW Concourse implementation has two docker images in the Docker Hub:
     Dockerfile for chalice:
       * https://github.com/alphagov/csw-concourse/blob/master/dockerfiles/chalice/Dockerfile
 
-    The command below builds a docker image, which is tagged as latest version, the -t flag also tags it as version 2.0:
+    The command below builds a docker image, which is tagged as latest version, the -t flag also tags it as version 2.1:
 
     ```
-    docker build --no-cache -t gdscyber/cyber-chalice -t gdscyber/cyber-chalice:2.0 .
+    docker build --no-cache -t gdscyber/cyber-chalice -t gdscyber/cyber-chalice:2.1 .
     ```
 
     Check DockerHub for the latest version tag.
@@ -44,7 +49,7 @@ The CSW Concourse implementation has two docker images in the Docker Hub:
     Afterwards to push to DockerHub run this command:
 
     ```
-    docker push gdscyber/cyber-chalice:2.0
+    docker push gdscyber/cyber-chalice:2.1
     ```
 
     You also have to separately run either of the following for AWS ECS to pick up that this is the latest version:
@@ -62,16 +67,16 @@ The CSW Concourse implementation has two docker images in the Docker Hub:
      * https://github.com/alphagov/csw-concourse/blob/master/dockerfiles/csw/Dockerfile
 
 
-    The command below builds a docker image for the csw-concourse-worker and tags it simultaneously as latest and version 1.3.1:
+    The command below builds a docker image for the csw-concourse-worker and tags it simultaneously as latest and version 1.3.2:
 
     ```
-    docker build --no-cache -t gdscyber/csw-concourse-worker -t gdscyber/csw-concourse-worker:1.3.1 .
+    docker build --no-cache -t gdscyber/csw-concourse-worker -t gdscyber/csw-concourse-worker:1.3.2 .
     ``` 
 
     Then to push to DockerHub:
 
     ```
-    docker push gdscyber/csw-concourse-worker:1.3.1
+    docker push gdscyber/csw-concourse-worker:1.3.2
     ```
     and
     ```
@@ -107,7 +112,7 @@ https://cd.gds-reliability.engineering/teams/cybersecurity-tools/pipelines/csw
   * Deploy job (incl. load)
     * Loads prefix and account ID from settings.json for the specified environment.
     * Does installation of dependencies and runs ```aws-assume-role```, ```getsshkey```, ```loadcsw``` and ```deploycsw``` scripts as above.
-    * Notifies Slack #cst-tooling-team channel on successful exit or failure.
+    * Notifies Slack #cyber-security-service-health channel on successful exit or failure.
 
     * uat-deploy job
       * task ```csw-unit-test``` - installs and activates virtual environment, installs wheel and requirements-dev.txt. Then runs unittest.
